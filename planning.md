@@ -26,7 +26,7 @@ Provenance Guard analyzes text submitted to a creative platform and returns an a
 5. The API returns confirmation that the appeal was received.
 
 ### Signal 1: LLM-based Classifier
-* Measures: overal semantic and stylistic impression of whether the text is likely AI-generated or human-written.
+* Measures: overall semantic and stylistic impression of whether the text is likely AI-generated or human-written.
 * Why useful: an LLM can judge coherence, tone, repetitiveness, and other high-level features that may indicate AI generation.
 * Blind spot: it may over-trust certain stylistic features that are common in both AI and human writing, leading to false positives or negatives.
 
