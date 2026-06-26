@@ -83,3 +83,66 @@ To reduce harm, the system should avoid using harsh wording unless confidence is
         "message": "Appeal received and marked for review."
     }
     ```
+
+## Architecture
+
+### Submission Flow
+
+Client / Creator
+   |
+   | POST /submit
+   | { creator_id, text }
+   v
+Flask API
+   |
+   | raw text
+   v
+Request Validator
+   |
+   | validated text
+   v
+Detection Pipeline
+   |
+   |----------------------------|
+   v                            v
+Signal 1: Groq LLM        Signal 2: Stylometric Heuristics
+   |                            |
+   | llm_score                  | stylometric_score
+   |----------------------------|
+                  |
+                  v
+          Confidence Scorer
+                  |
+                  | combined confidence + attribution
+                  v
+          Transparency Label Generator
+                  |
+                  | label text
+                  v
+              Audit Log
+                  |
+                  | structured decision entry
+                  v
+              JSON Response
+
+
+### Appeal Flow
+
+Client / Creator
+   |
+   | POST /appeal
+   | { content_id, creator_reasoning }
+   v
+Flask API
+   |
+   | lookup content_id
+   v
+Content Status Store
+   |
+   | status = under_review
+   v
+Audit Log
+   |
+   | appeal entry + original decision reference
+   v
+JSON Response
