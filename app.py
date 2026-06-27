@@ -1,5 +1,7 @@
+from http.client import HTTPException
 import json
 import os
+import re
 import uuid
 from datetime import datetime, timezone
 
@@ -11,7 +13,12 @@ load_dotenv()
 
 app = Flask(__name__)
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+if not GROQ_API_KEY:
+    raise RuntimeError("GROQ_API_KEY is missing. Add it to your .env file.")
+
+_client = Groq(api_key=GROQ_API_KEY)
 
 AUDIT_LOG_FILE = "audit_log.json"
 
@@ -44,27 +51,37 @@ def write_audit_entry(entry: dict):
         json.dump(entries, file, indent=2)
 
 
+def clamp_score(score: float, default: float = 0.5) -> float:
+    try:
+        score = float(score)
+    except (ValueError, TypeError):
+        score = default
+
+    return max(0.0, min(1.0, score))
+
+
 def classify_with_llm(text: str) -> dict:
     prompt = f"""
-You are helping classify whether a piece of text is likely AI-generated or human-written.
+You are helping classify whether a piece of text is likely AI-generated or human-written based on semantic and stylistic cues.
 
 Return only JSON with this format:
-{{
-"attribution": "likely_ai" or "likely_human" or "uncertain",
-"llm_score": a number from 0.0 to 1.0,
-"reasoning": "brief explanation"
-}}
+{{"llm_score": a number from 0.0 to 1.0, "reasoning": "brief explanation"}}
 
 Score meaning:
 0.0 = strongly human-written
 0.5 = uncertain or mixed evidence
 1.0 = strongly AI-generated
 
+Important: 
+- You are not making the final system decision.
+- Your score will be combined with a separate stylometric heuristic score.
+- Avoid overconfidence when the text is short, generic, or could plausibly be human-written.
+
 Text:
 {text}
 """
 
-    response = client.chat.completions.create(
+    response = _client.chat.completions.create(
         model=os.getenv("LLM_MODEL", "llama-3.3-70b-versatile"),
         messages=[
             {"role": "user", "content": prompt}
@@ -78,21 +95,85 @@ Text:
         result = json.loads(content)
     except json.JSONDecodeError:
         result = {
-            "attribution": "uncertain",
             "llm_score": 0.5,
             "reasoning": "The LLM response could not be parsed as JSON."
+        }
+    except Exception as e:
+        result = {
+            "llm_score": 0.5,
+            "reasoning": f"An unexpected error occurred while parsing the LLM response: {str(e)}"
         }
 
     return result
 
 
-def normalize_attribution(value: str) -> str:
-    allowed = {"likely_ai", "likely_human", "uncertain"}
-
-    if value in allowed:
-        return value
-
+def score_to_attribution(score: float) -> str:
+    if score < 0.4:
+        return "likely_human"
+    if score >= 0.75:
+        return "likely_ai"
     return "uncertain"
+
+
+def round_score(score: float) -> float:
+    return round(clamp_score(score), 2)
+
+
+def round_metric(value: float) -> float:
+    try:
+        return round(float(value), 2)
+    except (ValueError, TypeError):
+        return 0.0
+
+
+def analyze_stylometric(text: str) -> dict:
+    sentences = re.split(r'[.!?]+', text)
+    sentences = [s.strip() for s in sentences if s.strip()]
+
+    words = re.findall(r'\b\w+\b', text.lower())
+
+    if not words or not sentences:
+        return {
+            "stylometric_score": 0.5,
+            "metrics": {
+                "average_sentence_length": 0,
+                "sentence_length_variance": 0,
+                "type_token_ratio": 0,
+                "punctuation_density": 0,
+            }
+        }
+
+    sentence_lengths = [len(re.findall(r'\b\w+\b', s)) for s in sentences]
+    average_sentence_length = sum(sentence_lengths) / len(sentence_lengths)
+
+    sentence_length_variance = sum((l - average_sentence_length) ** 2 for l in sentence_lengths) / len(sentence_lengths)
+
+    unique_words = set(words)
+    type_token_ratio = len(unique_words) / len(words)
+
+    punctuation_count = len(re.findall(r'[^\w\s]', text))
+    punctuation_density = punctuation_count / max(len(words), 1)
+
+    # AI-like writing often has lower sentence variation and moderate vocabulary diversity.
+    uniformity_score = 1.0 - min(sentence_length_variance / 50, 1.0)
+
+    # Very low diversity can suggest repetitive/generated text.
+    low_diversity_score = 1.0 - min(type_token_ratio / 0.75, 1.0)
+
+    # Very low or very even punctuation can suggest polished/generated text.
+    punctuation_score = 1.0 - min(punctuation_density / 0.25, 1.0)
+
+    stylometric_score = uniformity_score * 0.50 + low_diversity_score * 0.30 + punctuation_score * 0.20
+
+    return {
+        "stylometric_score": round_score(stylometric_score),
+        "metrics": {
+            "average_sentence_length": round_metric(average_sentence_length),
+            "sentence_length_variance": round_metric(sentence_length_variance),
+            "type_token_ratio": round_metric(type_token_ratio),
+            "punctuation_density": round_metric(punctuation_density),
+        },
+    }
 
 
 @app.route("/submit", methods=["POST"])
@@ -111,20 +192,26 @@ def submit():
     content_id = str(uuid.uuid4())
 
     llm_result = classify_with_llm(text)
+    llm_score = clamp_score(llm_result.get("llm_score", 0.5))
 
-    attribution = normalize_attribution(llm_result.get("attribution", "uncertain"))
-    llm_score = float(llm_result.get("llm_score", 0.5))
+    stylometric_result = analyze_stylometric(text)
+    stylometric_score = clamp_score(stylometric_result.get("stylometric_score", 0.5))
+
+    confidence = (llm_score * 0.6 + stylometric_score * 0.4)
+
+    attribution = score_to_attribution(confidence)
 
     response = {
         "content_id": content_id,
         "creator_id": creator_id,
         "attribution": attribution,
-        "confidence": llm_score,
+        "confidence": confidence,
         "signals": {
             "llm_score": llm_score,
-            "stylometric_score": None
+            "stylometric_score": stylometric_score
         },
-        "label": "Placeholder label for Milestone 3.",
+        "stylometric_metrics": stylometric_result.get("metrics", {}),
+        "label": "Placeholder label for Milestone 4.",
         "status": "classified"
     }
 
@@ -142,6 +229,22 @@ def submit():
 @app.route("/log", methods=["GET"])
 def audit_log():
     return jsonify({"entries": read_audit_log()}), 200
+
+
+@app.errorhandler(HTTPException)
+def handle_http_error(error):
+    return jsonify({
+        "error": error.name,
+        "message": error.description
+    }), error.code
+
+
+@app.errorhandler(Exception)
+def handle_server_error(error):
+    return jsonify({
+        "error": "Internal Server Error",
+        "message": "Something went wrong while processing the request."
+    }), 500
 
 
 if __name__ == "__main__":

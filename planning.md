@@ -91,7 +91,13 @@ JSON Response
             "llm_score": 0.86,
             "stylometric_score": 0.77
         },
-        "label": "Plain-language transparency label shown to readers.",
+        "stylometric_metrics": {
+            "average_sentence_length": 16.0,
+            "sentence_length_variance": 0.0,
+            "type_token_ratio": 0.88,
+            "punctuation_density": 0.13
+        },
+        "label": "Placeholder label until Milestone 5.",
         "status": "classified"
     }
     ```
@@ -127,6 +133,12 @@ JSON Response
                 "llm_score": 0.86,
                 "stylometric_score": 0.77
             },
+            "stylometric_metrics": {
+                "average_sentence_length": 16.0,
+                "sentence_length_variance": 0.0,
+                "type_token_ratio": 0.88,
+                "punctuation_density": 0.13
+            },
             "label": "Plain-language transparency label shown to readers.",
             "status": "classified",
             "timestamp": "2024-06-01T12:34:56Z"
@@ -141,11 +153,13 @@ JSON Response
 
 ### Signal 1: LLM-based Classifier
 * Measures: overall semantic and stylistic impression of whether the text is likely AI-generated or human-written.
+* Output: `llm_score`, a number from 0.0 to 1.0, plus a brief reasoning for the audit log.
 * Why useful: an LLM can judge coherence, tone, repetitiveness, and other high-level features that may indicate AI generation.
 * Blind spot: it may over-trust certain stylistic features that are common in both AI and human writing, leading to false positives or negatives.
 
 ### Signal 2: Stylometric Heuristics
 * Measures: low-level features such as word frequency, sentence length, punctuation usage, and other statistical patterns.
+* Output: `stylometric_score`, a number from 0.0 to 1.0, plus detailed metrics for the audit log.
 * Why useful: these features can reveal subtle differences in writing style that are difficult for humans to detect, and they are less likely to be influenced by the content's topic or meaning.
 * Blind spot: stylometric features can be manipulated by a skilled human writer, and they may not capture the overall semantic coherence of the text, leading to misclassification.
 
@@ -155,9 +169,11 @@ JSON Response
 
 Each detection signal returns a score from 0.0 to 1.0, where:
 
-- 0.0 means strongly human-written
-- 0.5 means uncertain or mixed evidence
-- 1.0 means strongly AI-generated
+* 0.0 means strongly human-written
+* 0.5 means uncertain or mixed evidence
+* 1.0 means strongly AI-generated
+
+The LLM signal returns an `llm_score` and brief reasoning, but it does not make the final system decision by itself. The stylometric signal returns a `stylometric_score` based on structural writing patterns such as sentence length variance, type-token ratio, and punctuation density.
 
 The final confidence score is a weighted combination of both signals:
 
@@ -165,15 +181,19 @@ The final confidence score is a weighted combination of both signals:
 combined_score = (llm_score * 0.60) + (stylometric_score * 0.40)
 ```
 
+I weight the LLM signal slightly higher because it can evaluate semantic and stylistic cues in context, while the stylometric signal provides a separate structural check. The final attribution is determined only after these two scores are combined.
+
 The system maps the combined score into three attribution categories:
 
 | Combined Score Range | Attribution  | Label Type            |
-|----------------------|--------------|-----------------------|
+| -------------------- | ------------ | --------------------- |
 | 0.75–1.00            | likely_ai    | High-confidence AI    |
 | 0.40–0.74            | uncertain    | Uncertain             |
 | 0.00–0.39            | likely_human | High-confidence human |
 
 A score around 0.50 means the system has mixed evidence and should avoid making a strong attribution claim. Because falsely labeling human writing as AI-generated can harm creators, the system only uses the high-confidence AI label when the combined score is at least 0.75.
+
+For readability in API responses and audit logs, numeric scores and stylometric metrics are rounded to two decimal places. The unrounded combined score can still be used internally before mapping to an attribution category.
 
 ---
 
@@ -238,6 +258,8 @@ I will verify the output by testing the route with curl first using a hardcoded 
 I will provide the AI tool with the Detection Signals section, Uncertainty Representation section, and Architecture diagram. I will ask it to generate the stylometric heuristic function and the scoring function that combines the LLM score and stylometric score.
 
 I will verify the output by testing at least four inputs: clearly AI-generated text, clearly human-written text, formal human writing, and lightly edited AI-style text. I will check that the scores vary meaningfully and that all three label categories are reachable.
+
+During implementation, I adjusted the LLM signal so it returns only `llm_score` and reasoning instead of a final attribution. This keeps the final attribution tied to the combined multi-signal score rather than the LLM alone.
 
 ### Milestone 5: Production Layer
 I will provide the AI tool with the Transparency Label Design section, Appeals Workflow section, API Surface section, and Architecture diagram. I will ask it to generate the label generation function, POST /appeal endpoint, rate limiting setup, and audit log updates.
