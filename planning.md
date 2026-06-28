@@ -54,7 +54,7 @@ Signal 1: Groq LLM        Signal 2: Stylometric Heuristics
 Client / Creator
    |
    | POST /appeal
-   | { content_id, creator_reasoning }
+   | { content_id, creator_id, creator_reasoning }
    v
 Flask API
    |
@@ -70,9 +70,11 @@ Audit Log
    v
 JSON Response
 
-### API Surface
+---
 
-#### POST /submit
+## API Surface
+
+### POST /submit
 * Input:
     ```
     {
@@ -97,16 +99,17 @@ JSON Response
             "type_token_ratio": 0.88,
             "punctuation_density": 0.13
         },
-        "label": "Placeholder label until Milestone 5.",
+        "label": "This submission appears likely to be human-written based on the available analysis signals.",
         "status": "classified"
     }
     ```
 
-#### POST /appeal
+### POST /appeal
 * Input:
     ```
     {
         "content_id": "uuid",
+        "creator_id": "user-123",
         "creator_reasoning": "I wrote this myself and can provide drafts."
     }
     ```
@@ -115,12 +118,13 @@ JSON Response
     ```
     {
         "content_id": "uuid",
+        "creator_id": "user-123",
         "status": "under_review",
         "message": "Appeal received and marked for review."
     }
     ```
 
-#### GET /log
+### GET /log
 * Output:
     ```
     [
@@ -218,6 +222,7 @@ The appeal endpoint accepts:
 ```json
 {
   "content_id": "generated-content-id",
+  "creator_id": "user-123",
   "creator_reasoning": "I wrote this myself and can provide drafts or revision history."
 }
 ```
@@ -231,6 +236,103 @@ When an appeal is received, the system:
 5. Returns a confirmation response.
 
 A human reviewer would need to see the original text, attribution result, confidence score, individual signal scores, transparency label, creator reasoning, timestamp, and current status.
+
+The appeal endpoint also checks that the creator_id matches the original creator_id from the classification entry. This prevents one creator from appealing another creator's content.
+
+If an appeal already exists for the same content_id and creator_id, the system returns a duplicate appeal error instead of creating another appeal entry.
+
+---
+
+## Rate Limiting
+
+The `/submit` endpoint uses Flask-Limiter with the following limits:
+
+```python
+10 per minute;100 per day
+```
+The 10-per-minute limit prevents rapid automated abuse, while the 100-per-day limit still allows a normal creator to submit multiple drafts or pieces of writing in a day. When the limit is exceeded, the API returns a `429 Too Many Requests` response.
+
+---
+
+## Audit Log
+
+The audit log stores structured JSON entries for both classifications and appeals.
+
+### Classification Entries
+
+Classification entries include:
+
+* `timestamp`
+* `event_type: classification`
+* `content_id`
+* `creator_id`
+* `attribution`
+* `confidence`
+* `signals.llm_score`
+* `signals.stylometric_score`
+* `stylometric_metrics`
+* `label`
+* `status`
+
+Example classification entry:
+
+```json
+{
+  "timestamp": "2026-06-28T17:59:58.165944+00:00",
+  "event_type": "classification",
+  "content_id": "uuid",
+  "creator_id": "user-123",
+  "attribution": "likely_human",
+  "confidence": 0.36,
+  "signals": {
+    "llm_score": 0.2,
+    "stylometric_score": 0.6
+  },
+  "stylometric_metrics": {
+    "average_sentence_length": 16.0,
+    "sentence_length_variance": 0.0,
+    "type_token_ratio": 0.88,
+    "punctuation_density": 0.12
+  },
+  "label": "This submission appears likely to be human-written based on the available analysis signals.",
+  "status": "classified"
+}
+```
+
+### Appeal Entries
+
+Appeal entries include:
+
+* `timestamp`
+* `event_type: appeal`
+* `content_id`
+* `creator_id`
+* `creator_reasoning`
+* `original_attribution`
+* `original_confidence`
+* `signals`
+* `label`
+* `status: under_review`
+
+Example appeal entry:
+
+```json
+{
+  "timestamp": "2026-06-28T18:00:08.931037+00:00",
+  "event_type": "appeal",
+  "content_id": "uuid",
+  "creator_id": "user-123",
+  "creator_reasoning": "I wrote this myself and can provide drafts or revision history.",
+  "original_attribution": "likely_human",
+  "original_confidence": 0.36,
+  "signals": {
+    "llm_score": 0.2,
+    "stylometric_score": 0.6
+  },
+  "label": "This submission appears likely to be human-written based on the available analysis signals.",
+  "status": "under_review"
+}
+```
 
 ---
 

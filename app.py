@@ -1,9 +1,12 @@
-from http.client import HTTPException
+from werkzeug.exceptions import HTTPException
 import json
 import os
 import re
 import uuid
 from datetime import datetime, timezone
+
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
@@ -13,6 +16,14 @@ load_dotenv()
 
 app = Flask(__name__)
 
+# Initialize Flask-Limiter
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"  # Use in-memory storage for rate limiting
+)
+
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 if not GROQ_API_KEY:
@@ -21,6 +32,12 @@ if not GROQ_API_KEY:
 _client = Groq(api_key=GROQ_API_KEY)
 
 AUDIT_LOG_FILE = "audit_log.json"
+
+LABEL_MAPPING = {
+    "likely_ai": "This submission appears likely to be AI-generated based on multiple analysis signals. This label is not a final judgment and may be appealed by the creator.",
+    "uncertain": "This submission has mixed signals, so we cannot confidently determine whether it was AI-generated or human-written.",
+    "likely_human": "This submission appears likely to be human-written based on the available analysis signals."
+}
 
 
 def now_iso() -> str:
@@ -176,7 +193,91 @@ def analyze_stylometric(text: str) -> dict:
     }
 
 
+def find_latest_classification_entry(content_id: str):
+    entries = read_audit_log()
+
+    for entry in reversed(entries):
+        if (
+            entry.get("content_id") == content_id
+            and entry.get("event_type") == "classification"
+        ):
+            return entry
+
+    return None
+
+
+def find_existing_appeal(content_id: str, creator_id: str):
+    entries = read_audit_log()
+
+    for entry in reversed(entries):
+        if (
+            entry.get("content_id") == content_id
+            and entry.get("creator_id") == creator_id
+            and entry.get("event_type") == "appeal"
+        ):
+            return entry
+
+    return None
+
+
+@app.route("/appeal", methods=["POST"])
+def appeal():
+    data = request.get_json(silent=True)
+
+    if not data:
+        return jsonify({"error": "Request body must be JSON."}), 400
+
+    content_id = data.get("content_id")
+    creator_id = data.get("creator_id")
+    creator_reasoning = data.get("creator_reasoning")
+
+    if not (content_id and creator_reasoning and creator_id):
+        return jsonify({"error": "content_id, creator_id, and creator_reasoning are required."}), 400
+
+    original_entry = find_latest_classification_entry(content_id)
+
+    if not original_entry:
+        return jsonify({"error": f"No classification found for this content_id: {content_id}"}), 404
+
+    if original_entry.get("creator_id") != creator_id:
+        return jsonify({
+            "error": "Only the original creator can appeal this classification."
+        }), 403
+
+    existing_appeal = find_existing_appeal(content_id, creator_id)
+
+    if existing_appeal:
+        return jsonify({
+            "error": "An appeal has already been submitted for this content.",
+            "content_id": content_id,
+            "status": "under_review"
+        }), 409
+
+    appeal_entry = {
+        "timestamp": now_iso(),
+        "event_type": "appeal",
+        "content_id": content_id,
+        "creator_id": creator_id,
+        "original_attribution": original_entry.get("attribution"),
+        "original_confidence": original_entry.get("confidence"),
+        "signals": original_entry.get("signals", {}),
+        "label": original_entry.get("label"),
+        "status": "under_review",
+        "creator_reasoning": creator_reasoning,
+    }
+
+    write_audit_entry(appeal_entry)
+
+    return jsonify({
+        "content_id": content_id,
+        "creator_id": creator_id,
+        "status": "under_review",
+        "message": "Appeal received and marked for review.",
+    }), 200
+
+
 @app.route("/submit", methods=["POST"])
+@limiter.limit("10 per minute;100 per day")
 def submit():
     data = request.get_json(silent=True)
 
@@ -211,12 +312,13 @@ def submit():
             "stylometric_score": stylometric_score
         },
         "stylometric_metrics": stylometric_result.get("metrics", {}),
-        "label": "Placeholder label for Milestone 4.",
+        "label": LABEL_MAPPING.get(attribution, LABEL_MAPPING["uncertain"]),
         "status": "classified"
     }
 
     audit_entry = {
         "timestamp": now_iso(),
+        "event_type": "classification",
         **response,
         "llm_reasoning": llm_result.get("reasoning", "")
     }
