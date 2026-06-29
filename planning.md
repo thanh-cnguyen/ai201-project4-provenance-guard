@@ -167,6 +167,12 @@ JSON Response
 * Why useful: these features can reveal subtle differences in writing style that are difficult for humans to detect, and they are less likely to be influenced by the content's topic or meaning.
 * Blind spot: stylometric features can be manipulated by a skilled human writer, and they may not capture the overall semantic coherence of the text, leading to misclassification.
 
+### Signal 3: Generic AI Phrase Heuristic
+* Measures: whether the text contains common generic phrases often associated with AI-generated writing, such as "it is important to note," "furthermore," "paradigm shift," or "responsible deployment."
+* Output: `generic_phrase_score`, a number from 0.0 to 1.0, plus the matched phrases.
+* Why useful: AI-generated writing often uses generic transition phrases, broad claims, and polished boilerplate language. This signal provides a lightweight lexical check separate from the LLM and stylometric metrics.
+* Blind spot: a human writer may naturally use these phrases, and AI-generated text may avoid them if edited or prompted differently.
+
 ---
 
 ## Uncertainty Representation
@@ -177,15 +183,15 @@ Each detection signal returns a score from 0.0 to 1.0, where:
 * 0.5 means uncertain or mixed evidence
 * 1.0 means strongly AI-generated
 
-The LLM signal returns an `llm_score` and brief reasoning, but it does not make the final system decision by itself. The stylometric signal returns a `stylometric_score` based on structural writing patterns such as sentence length variance, type-token ratio, and punctuation density.
+The LLM signal returns an `llm_score` and brief reasoning, but it does not make the final system decision by itself. The stylometric signal returns a `stylometric_score` based on structural writing patterns such as sentence length variance, type-token ratio, and punctuation density. The generic phrase signal returns a `generic_phrase_score` based on the presence of common AI-generated phrases.
 
-The final confidence score is a weighted combination of both signals:
+The final confidence score is a weighted combination of all three signals:
 
 ```python
-combined_score = (llm_score * 0.60) + (stylometric_score * 0.40)
+combined_score = (llm_score * 0.60) + (stylometric_score * 0.30) + (generic_phrase_score * 0.20)
 ```
 
-I weight the LLM signal slightly higher because it can evaluate semantic and stylistic cues in context, while the stylometric signal provides a separate structural check. The final attribution is determined only after these two scores are combined.
+I weight the LLM signal slightly higher because it can evaluate semantic and stylistic cues in context, while the stylometric signal provides a separate structural check. The generic phrase signal adds a lightweight lexical check. The final attribution is determined only after these three scores are combined.
 
 The system maps the combined score into three attribution categories:
 
@@ -270,6 +276,7 @@ Classification entries include:
 * `confidence`
 * `signals.llm_score`
 * `signals.stylometric_score`
+* `signals.generic_phrase_score`
 * `stylometric_metrics`
 * `label`
 * `status`
@@ -285,8 +292,9 @@ Example classification entry:
   "attribution": "likely_human",
   "confidence": 0.36,
   "signals": {
-    "llm_score": 0.2,
-    "stylometric_score": 0.6
+    "llm_score": 0.86,
+    "stylometric_score": 0.77,
+    "generic_phrase_score": 0.25
   },
   "stylometric_metrics": {
     "average_sentence_length": 16.0,
@@ -294,6 +302,10 @@ Example classification entry:
     "type_token_ratio": 0.88,
     "punctuation_density": 0.12
   },
+  "generic_phrase_matches": [
+    "it is important to note",
+    "furthermore"
+  ],
   "label": "This submission appears likely to be human-written based on the available analysis signals.",
   "status": "classified"
 }
@@ -327,8 +339,13 @@ Example appeal entry:
   "original_confidence": 0.36,
   "signals": {
     "llm_score": 0.2,
-    "stylometric_score": 0.6
+    "stylometric_score": 0.6,
+    "generic_phrase_score": 0.25
   },
+  "generic_phrase_matches": [
+    "it is important to note",
+    "furthermore"
+  ],
   "label": "This submission appears likely to be human-written based on the available analysis signals.",
   "status": "under_review"
 }

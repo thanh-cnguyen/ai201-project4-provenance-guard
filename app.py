@@ -9,6 +9,7 @@ from werkzeug.exceptions import HTTPException
 load_dotenv()
 
 from helpers import (
+    analyze_generic_phrases,
     analyze_stylometric,
     combine_scores,
     clamp_score,
@@ -111,7 +112,10 @@ def submit():
     stylometric_result = analyze_stylometric(text)
     stylometric_score = clamp_score(stylometric_result.get("stylometric_score", 0.5))
 
-    confidence = combine_scores(llm_score, stylometric_score)
+    generic_phrase_result = analyze_generic_phrases(text)
+    generic_phrase_score = clamp_score(generic_phrase_result.get("generic_phrase_score", 0.0))
+
+    confidence = combine_scores(llm_score, stylometric_score, generic_phrase_score)
     attribution = score_to_attribution(confidence)
 
     response = {
@@ -121,9 +125,11 @@ def submit():
         "confidence": confidence,
         "signals": {
             "llm_score": llm_score,
-            "stylometric_score": stylometric_score
+            "stylometric_score": stylometric_score,
+            "generic_phrase_score": generic_phrase_score
         },
         "stylometric_metrics": stylometric_result.get("metrics", {}),
+        "generic_phrase_matches": generic_phrase_result.get("matched_phrases", []),
         "label": generate_label(attribution),
         "status": "classified"
     }

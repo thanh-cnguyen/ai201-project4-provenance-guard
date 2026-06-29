@@ -14,6 +14,37 @@ LABEL_MAPPING = {
     "likely_human": "This submission appears likely to be human-written based on the available analysis signals."
 }
 
+GENERIC_AI_PHRASES = [
+    "as an ai language model",
+    "i'd be happy to",
+    "it is important to note",
+    "it's important to note",
+    "it's worth noting",
+    "in conclusion",
+    "in summary",
+    "to summarize",
+    "let's dive in",
+    "let's explore",
+    "a comprehensive",
+    "comprehensive guide",
+    "paradigm shift",
+    "plays a crucial role",
+    "navigating the complexities",
+    "unlock the potential",
+    "rapidly evolving",
+    "cutting-edge",
+    "seamlessly",
+    "robust",
+    "leveraging",
+    "multifaceted",
+    "nuanced",
+    "rest assured",
+    "it goes without saying",
+    "responsible deployment",
+    "ethical implications",
+    "various sectors",
+    "stakeholders",
+]
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
@@ -207,6 +238,26 @@ def generate_label(attribution: str) -> str:
     return LABEL_MAPPING.get(attribution, LABEL_MAPPING["uncertain"])
 
 
-def combine_scores(llm_score: float, stylometric_score: float) -> float:
-    combined_score = (llm_score * 0.60) + (stylometric_score * 0.40)
+def combine_scores(llm_score: float, stylometric_score: float, generic_phrase_score: float) -> float:
+    combined_score = (llm_score * 0.60) + (stylometric_score * 0.30) + (generic_phrase_score * 0.20)
     return round_score(combined_score)
+
+
+def analyze_generic_phrases(text: str) -> dict:
+    normalized_text = text.lower()
+
+    matched_phrases = [
+        phrase for phrase in GENERIC_AI_PHRASES
+        if phrase in normalized_text
+    ]
+
+    phrase_count = len(matched_phrases)
+
+    # 0 matches = no generic phrase evidence
+    # 5 or more matches = strong generic phrase evidence
+    generic_phrase_score = min(phrase_count / 5, 1.0)
+
+    return {
+        "generic_phrase_score": round_score(generic_phrase_score),
+        "matched_phrases": matched_phrases
+    }

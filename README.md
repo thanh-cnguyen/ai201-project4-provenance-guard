@@ -75,7 +75,8 @@ Example response:
   "label": "This submission appears likely to be human-written based on the available analysis signals.",
   "signals": {
     "llm_score": 0.2,
-    "stylometric_score": 0.6
+    "stylometric_score": 0.6,
+    "generic_phrase_score": 0.25
   },
   "status": "classified",
   "stylometric_metrics": {
@@ -156,6 +157,14 @@ The stylometric signal returns a score from `0.0` to `1.0`.
 
 **What it misses:** short texts do not provide enough data for reliable stylometric analysis. Poetry, casual writing, or intentionally simple writing may also be misread.
 
+### Signal 3: Generic AI Phrase Heuristic
+
+The generic AI phrase heuristic looks for boilerplate phrases and wording patterns that often appear in AI-generated text, such as "it is important to note," "as an AI language model," "let's dive in," or "comprehensive guide." It counts how many phrases from a curated list appear in the submission and converts that count into a `generic_phrase_score` from 0.0 to 1.0.
+
+**What it captures:** repeated AI-like boilerplate phrasing, generic transitions, and polished reusable wording patterns.
+
+**What it misses:** the phrase list is not exhaustive, so AI-generated text may avoid these phrases completely. Human writers can also naturally use formal or common phrases from the list. Because this signal can miss edited AI text and create false positives, it is weighted lower than the LLM and stylometric signals.
+
 ---
 
 ## Confidence Scoring
@@ -169,7 +178,7 @@ Each signal returns a score from `0.0` to `1.0`:
 The final confidence score is calculated using a weighted average:
 
 ```python
-combined_score = (llm_score * 0.60) + (stylometric_score * 0.40)
+combined_score = (llm_score * 0.50) + (stylometric_score * 0.30) + (generic_phrase_score * 0.20)
 ```
 
 I weighted the LLM signal slightly higher because it can evaluate semantic and stylistic context. The stylometric signal still matters because it provides a separate structural check.
@@ -200,7 +209,8 @@ Output:
   "confidence": 0.36,
   "signals": {
     "llm_score": 0.2,
-    "stylometric_score": 0.6
+    "stylometric_score": 0.6,
+    "generic_phrase_score": 0.25
   }
 }
 ```
@@ -223,7 +233,8 @@ Output:
   "confidence": 0.25,
   "signals": {
     "llm_score": 0.0,
-    "stylometric_score": 0.63
+    "stylometric_score": 0.63,
+    "generic_phrase_score": 0.25
   }
 }
 ```
@@ -354,7 +365,8 @@ Example audit log output:
       "label": "This submission appears likely to be human-written based on the available analysis signals.",
       "signals": {
         "llm_score": 0.2,
-        "stylometric_score": 0.6
+        "stylometric_score": 0.6,
+        "generic_phrase_score": 0.25
       },
       "status": "classified",
       "timestamp": "2026-06-28T17:59:58.165944+00:00"
@@ -512,4 +524,24 @@ curl -s -X POST http://localhost:5000/appeal -H "Content-Type: application/json"
 
 ```cmd
 for /L %i in (1,1,12) do curl -s -o NUL -w "%{http_code}\n" -X POST http://localhost:5000/submit -H "Content-Type: application/json" -d "{\"creator_id\":\"rate-test-user\",\"text\":\"This is a test submission for rate limit testing purposes only.\"}"
+```
+
+## Stretch Feature: Ensemble Detection
+
+I implemented the ensemble detection stretch feature by adding a third signal: a generic AI phrase heuristic.
+
+The final system now uses three distinct signals:
+
+1. `llm_score`
+2. `stylometric_score`
+3. `generic_phrase_score`
+
+The combined score is calculated as:
+
+```python
+combined_score = (
+    llm_score * 0.50
+    + stylometric_score * 0.30
+    + generic_phrase_score * 0.20
+)
 ```
