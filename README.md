@@ -419,6 +419,9 @@ Formal essays, academic writing, and professional blog posts may have consistent
 
 If AI-generated text is heavily edited by a person, the stylometric signal may become more human-like. This can push the result toward uncertain or likely human.
 
+### Non-exhaustive phrase list for generic AI phrase heuristic
+The generic AI phrase heuristic uses a curated list of common AI-generated phrases. However, this list is not exhaustive. AI-generated text may avoid these phrases completely, and human writers can also naturally use formal or common phrases from the list. Because this signal can miss edited AI text and create false positives, it is weighted lower than the LLM and stylometric signals.
+
 ---
 
 ## Spec Reflection
