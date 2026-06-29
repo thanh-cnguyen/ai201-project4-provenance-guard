@@ -117,6 +117,7 @@ Text:
 
     return result
 
+
 def analyze_stylometric(text: str) -> dict:
     sentences = re.split(r'[.!?]+', text)
     sentences = [s.strip() for s in sentences if s.strip()]
@@ -165,6 +166,7 @@ def analyze_stylometric(text: str) -> dict:
             "punctuation_density": round_metric(punctuation_density),
         },
     }
+
 
 def find_latest_classification_entry(content_id: str):
     entries = read_audit_log()
