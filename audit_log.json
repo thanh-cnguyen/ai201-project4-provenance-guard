@@ -1,0 +1,248 @@
+[
+  {
+    "timestamp": "2026-06-29T03:15:28.748975+00:00",
+    "event_type": "classification",
+    "content_id": "f8ed2e46-5742-46fc-9b48-0d77db184f80",
+    "creator_id": "user-123",
+    "attribution": "likely_human",
+    "confidence": 0.36,
+    "signals": {
+      "llm_score": 0.2,
+      "stylometric_score": 0.6
+    },
+    "stylometric_metrics": {
+      "average_sentence_length": 16.0,
+      "sentence_length_variance": 0.0,
+      "type_token_ratio": 0.88,
+      "punctuation_density": 0.12
+    },
+    "label": "This submission appears likely to be human-written based on the available analysis signals.",
+    "status": "classified",
+    "llm_reasoning": "The text uses poetic language and a descriptive phrase, which is a common trait of human-written text. The sentence structure and vocabulary are also simple and evocative, suggesting a human touch."
+  },
+  {
+    "timestamp": "2026-06-29T03:20:00.338059+00:00",
+    "event_type": "classification",
+    "content_id": "b63b327b-3682-4578-ac3e-e378efa6fde7",
+    "creator_id": "user-123",
+    "attribution": "likely_human",
+    "confidence": 0.36,
+    "signals": {
+      "llm_score": 0.2,
+      "stylometric_score": 0.6
+    },
+    "stylometric_metrics": {
+      "average_sentence_length": 16.0,
+      "sentence_length_variance": 0.0,
+      "type_token_ratio": 0.88,
+      "punctuation_density": 0.12
+    },
+    "label": "This submission appears likely to be human-written based on the available analysis signals.",
+    "status": "classified",
+    "llm_reasoning": "The text uses poetic language and a descriptive phrase, which is a common trait of human-written text. The sentence structure and vocabulary are also simple and evocative, suggesting a human touch."
+  },
+  {
+    "timestamp": "2026-06-29T03:20:12.198881+00:00",
+    "event_type": "appeal",
+    "content_id": "b63b327b-3682-4578-ac3e-e378efa6fde7",
+    "creator_id": "user-123",
+    "original_attribution": "likely_human",
+    "original_confidence": 0.36,
+    "signals": {
+      "llm_score": 0.2,
+      "stylometric_score": 0.6
+    },
+    "label": "This submission appears likely to be human-written based on the available analysis signals.",
+    "status": "under_review",
+    "creator_reasoning": "I wrote this myself and can provide drafts or revision history."
+  },
+  {
+    "timestamp": "2026-06-29T03:20:13.359448+00:00",
+    "event_type": "classification",
+    "content_id": "282f6bc2-9c72-485d-a4cf-a12dfcd27c5f",
+    "creator_id": "rate-test-user",
+    "attribution": "likely_human",
+    "confidence": 0.25,
+    "signals": {
+      "llm_score": 0.0,
+      "stylometric_score": 0.63
+    },
+    "stylometric_metrics": {
+      "average_sentence_length": 11.0,
+      "sentence_length_variance": 0.0,
+      "type_token_ratio": 1.0,
+      "punctuation_density": 0.09
+    },
+    "label": "This submission appears likely to be human-written based on the available analysis signals.",
+    "status": "classified",
+    "llm_reasoning": "The text appears to be a generic, boilerplate message, which is a common pattern in AI-generated text for testing purposes."
+  },
+  {
+    "timestamp": "2026-06-29T03:20:13.789631+00:00",
+    "event_type": "classification",
+    "content_id": "6a133750-4aa0-4ae6-b8e3-2580d747fe7d",
+    "creator_id": "rate-test-user",
+    "attribution": "likely_human",
+    "confidence": 0.25,
+    "signals": {
+      "llm_score": 0.0,
+      "stylometric_score": 0.63
+    },
+    "stylometric_metrics": {
+      "average_sentence_length": 11.0,
+      "sentence_length_variance": 0.0,
+      "type_token_ratio": 1.0,
+      "punctuation_density": 0.09
+    },
+    "label": "This submission appears likely to be human-written based on the available analysis signals.",
+    "status": "classified",
+    "llm_reasoning": "The text appears to be a generic, boilerplate message, which is a common pattern in AI-generated text for testing purposes."
+  },
+  {
+    "timestamp": "2026-06-29T03:20:14.249858+00:00",
+    "event_type": "classification",
+    "content_id": "edea76db-6c0b-4d24-b6dc-0a980f6069fb",
+    "creator_id": "rate-test-user",
+    "attribution": "likely_human",
+    "confidence": 0.25,
+    "signals": {
+      "llm_score": 0.0,
+      "stylometric_score": 0.63
+    },
+    "stylometric_metrics": {
+      "average_sentence_length": 11.0,
+      "sentence_length_variance": 0.0,
+      "type_token_ratio": 1.0,
+      "punctuation_density": 0.09
+    },
+    "label": "This submission appears likely to be human-written based on the available analysis signals.",
+    "status": "classified",
+    "llm_reasoning": "The text appears to be a generic, boilerplate message that could plausibly be written by a human for testing purposes, lacking distinctive language or style that would suggest AI generation."
+  },
+  {
+    "timestamp": "2026-06-29T03:20:14.696390+00:00",
+    "event_type": "classification",
+    "content_id": "4e4fd8ac-84c2-4b1c-9656-03eaab5de9cb",
+    "creator_id": "rate-test-user",
+    "attribution": "likely_human",
+    "confidence": 0.25,
+    "signals": {
+      "llm_score": 0.0,
+      "stylometric_score": 0.63
+    },
+    "stylometric_metrics": {
+      "average_sentence_length": 11.0,
+      "sentence_length_variance": 0.0,
+      "type_token_ratio": 1.0,
+      "punctuation_density": 0.09
+    },
+    "label": "This submission appears likely to be human-written based on the available analysis signals.",
+    "status": "classified",
+    "llm_reasoning": "The text appears to be a generic, boilerplate message that could plausibly be written by a human for testing purposes, lacking distinctive language or style that would suggest AI generation."
+  },
+  {
+    "timestamp": "2026-06-29T03:20:15.156874+00:00",
+    "event_type": "classification",
+    "content_id": "71258f46-1b89-4c88-8cba-ee5ca960d9d1",
+    "creator_id": "rate-test-user",
+    "attribution": "likely_human",
+    "confidence": 0.25,
+    "signals": {
+      "llm_score": 0.0,
+      "stylometric_score": 0.63
+    },
+    "stylometric_metrics": {
+      "average_sentence_length": 11.0,
+      "sentence_length_variance": 0.0,
+      "type_token_ratio": 1.0,
+      "punctuation_density": 0.09
+    },
+    "label": "This submission appears likely to be human-written based on the available analysis signals.",
+    "status": "classified",
+    "llm_reasoning": "The text appears to be a generic, boilerplate message that could plausibly be written by a human for testing purposes, lacking distinctive language or style that would suggest AI generation."
+  },
+  {
+    "timestamp": "2026-06-29T03:20:15.628762+00:00",
+    "event_type": "classification",
+    "content_id": "bd2c3ec3-b596-4bd7-9dab-c35132e02c28",
+    "creator_id": "rate-test-user",
+    "attribution": "likely_human",
+    "confidence": 0.25,
+    "signals": {
+      "llm_score": 0.0,
+      "stylometric_score": 0.63
+    },
+    "stylometric_metrics": {
+      "average_sentence_length": 11.0,
+      "sentence_length_variance": 0.0,
+      "type_token_ratio": 1.0,
+      "punctuation_density": 0.09
+    },
+    "label": "This submission appears likely to be human-written based on the available analysis signals.",
+    "status": "classified",
+    "llm_reasoning": "The text appears to be a generic, boilerplate message, which is a common use case for AI-generated text. However, the short length and lack of complex language suggest it could plausibly be human-written, so we're leaning towards a conservative score."
+  },
+  {
+    "timestamp": "2026-06-29T03:20:16.052570+00:00",
+    "event_type": "classification",
+    "content_id": "f0be939c-5032-4068-ac7d-e65a0d97859b",
+    "creator_id": "rate-test-user",
+    "attribution": "likely_human",
+    "confidence": 0.25,
+    "signals": {
+      "llm_score": 0.0,
+      "stylometric_score": 0.63
+    },
+    "stylometric_metrics": {
+      "average_sentence_length": 11.0,
+      "sentence_length_variance": 0.0,
+      "type_token_ratio": 1.0,
+      "punctuation_density": 0.09
+    },
+    "label": "This submission appears likely to be human-written based on the available analysis signals.",
+    "status": "classified",
+    "llm_reasoning": "The text appears to be a generic, boilerplate message, which is a common pattern in AI-generated text for testing purposes."
+  },
+  {
+    "timestamp": "2026-06-29T03:20:16.570798+00:00",
+    "event_type": "classification",
+    "content_id": "5ae2bb31-ce3d-4e23-b221-34fe7dcbeaa5",
+    "creator_id": "rate-test-user",
+    "attribution": "likely_human",
+    "confidence": 0.25,
+    "signals": {
+      "llm_score": 0.0,
+      "stylometric_score": 0.63
+    },
+    "stylometric_metrics": {
+      "average_sentence_length": 11.0,
+      "sentence_length_variance": 0.0,
+      "type_token_ratio": 1.0,
+      "punctuation_density": 0.09
+    },
+    "label": "This submission appears likely to be human-written based on the available analysis signals.",
+    "status": "classified",
+    "llm_reasoning": "The text appears to be a generic, boilerplate message, which is a common use case for AI-generated text. However, its brevity and lack of complexity suggest it could plausibly be human-written, so we're leaning towards a conservative score."
+  },
+  {
+    "timestamp": "2026-06-29T03:20:17.009457+00:00",
+    "event_type": "classification",
+    "content_id": "d59939ba-7c9f-4550-86fa-ec943e91b097",
+    "creator_id": "rate-test-user",
+    "attribution": "likely_human",
+    "confidence": 0.25,
+    "signals": {
+      "llm_score": 0.0,
+      "stylometric_score": 0.63
+    },
+    "stylometric_metrics": {
+      "average_sentence_length": 11.0,
+      "sentence_length_variance": 0.0,
+      "type_token_ratio": 1.0,
+      "punctuation_density": 0.09
+    },
+    "label": "This submission appears likely to be human-written based on the available analysis signals.",
+    "status": "classified",
+    "llm_reasoning": "The text appears to be a generic, boilerplate message, which is a common pattern in AI-generated text for testing purposes."
+  }
+]
