@@ -26,12 +26,12 @@ Request Validator
    v
 Detection Pipeline
    |
-   |----------------------------|
-   v                            v
-Signal 1: Groq LLM        Signal 2: Stylometric Heuristics
-   |                            |
-   | llm_score                  | stylometric_score
-   |----------------------------|
+   |----------------------------|---------------------------------------|
+   v                            v                                       v
+Signal 1: Groq LLM        Signal 2: Stylometric Heuristics        Signal 3: Generic AI Phrase Heuristic
+   |                            |                                       |
+   | llm_score                  | stylometric_score                     | generic_phrase_score
+   |----------------------------|---------------------------------------|
                   |
                   v
           Confidence Scorer
@@ -91,7 +91,8 @@ JSON Response
         "confidence": 0.82,
         "signals": {
             "llm_score": 0.86,
-            "stylometric_score": 0.77
+            "stylometric_score": 0.77,
+            "generic_phrase_score": 0.25
         },
         "stylometric_metrics": {
             "average_sentence_length": 16.0,
@@ -135,7 +136,8 @@ JSON Response
             "confidence": 0.82,
             "signals": {
                 "llm_score": 0.86,
-                "stylometric_score": 0.77
+                "stylometric_score": 0.77,
+                "generic_phrase_score": 0.25
             },
             "stylometric_metrics": {
                 "average_sentence_length": 16.0,
